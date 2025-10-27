@@ -1,0 +1,134 @@
+        {/* Ações - Recomendações Inteligentes */}
+        <TabsContent value="acoes" className="space-y-6">
+          {/* Ação Rápida para Goals */}
+          <Card className="border-green-200 bg-green-50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-green-600" />
+                Geração Inteligente de Objetivos
+              </CardTitle>
+              <CardDescription>
+                Transforme automaticamente os resultados do QualityScore em objetivos estratégicos no sistema Goals
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between mb-4">
+                <div className="space-y-1">
+                  <div className="text-sm font-medium">Oportunidades Identificadas:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {dadosProcessados.scoresPorPilar
+                      .filter(p => p.score < 3.0)
+                      .map(pilar => (
+                        <Badge key={pilar.categoria} variant="outline" className="border-orange-300 text-orange-700">
+                          {pilar.pilar} ({pilar.score.toFixed(1)})
+                        </Badge>
+                      ))}
+                  </div>
+                </div>
+                <Button 
+                  onClick={gerarObjetivosDoQualityScore}
+                  disabled={gerandoObjetivos || dadosProcessados.scoresPorPilar.filter(p => p.score < 3.0).length === 0}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  <Target className="h-4 w-4 mr-2" />
+                  {gerandoObjetivos ? 'Criando...' : 'Criar Objetivos Goals'}
+                  <ArrowRight className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
+              
+              {dadosProcessados.scoresPorPilar.filter(p => p.score < 3.0).length === 0 && (
+                <div className="text-center py-4 text-green-700">
+                  <CheckCircle className="h-8 w-8 mx-auto mb-2" />
+                  <p>Parabéns! Todos os pilares estão com bom nível de maturidade (≥ 3.0)</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recomendações por Pilar */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-gray-900">Recomendações por Pilar</h3>
+            
+            {dadosProcessados.scoresPorPilar
+              .sort((a, b) => a.score - b.score) // Ordenar por score (pior primeiro)
+              .map((pilar) => {
+                const PilarIcon = PILARES.find(p => p.id === pilar.categoria)?.icon || Settings;
+                const recomendacoes = getRecomendacoesPilar(pilar.categoria, pilar.score);
+                const nivelPilar = getNivelMaturidade(pilar.score);
+                
+                return (
+                  <Card key={pilar.categoria} className="overflow-hidden">
+                    <CardHeader className="pb-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <PilarIcon className="h-6 w-6" style={{ color: PILARES.find(p => p.id === pilar.categoria)?.color }} />
+                          <div>
+                            <CardTitle className="text-base">{pilar.pilar}</CardTitle>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" style={{ 
+                                backgroundColor: nivelPilar.cor + '20', 
+                                borderColor: nivelPilar.cor,
+                                color: nivelPilar.cor 
+                              }}>
+                                {pilar.score.toFixed(1)} - {nivelPilar.nivel}
+                              </Badge>
+                              {pilar.score < 3.0 && (
+                                <Badge variant="outline" className="border-orange-300 text-orange-700">
+                                  Oportunidade de Melhoria
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {pilar.score < 3.0 && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              gerarObjetivosDosResultadosQS({ 
+                                ...dadosProcessados, 
+                                scoresPorPilar: [pilar] 
+                              });
+                            }}
+                            className="text-green-600 border-green-200 hover:bg-green-50"
+                          >
+                            <Target className="h-4 w-4 mr-1" />
+                            Criar Objetivo
+                          </Button>
+                        )}
+                      </div>
+                    </CardHeader>
+                    
+                    <CardContent>
+                      <div className="space-y-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                            <span className="text-sm font-medium text-red-700">Estratégico</span>
+                          </div>
+                          <p className="text-sm text-gray-600 ml-4">{recomendacoes.estrategica}</p>
+                        </div>
+                        
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+                            <span className="text-sm font-medium text-orange-700">Tático</span>
+                          </div>
+                          <p className="text-sm text-gray-600 ml-4">{recomendacoes.tatica}</p>
+                        </div>
+                        
+                        <div>
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                            <span className="text-sm font-medium text-blue-700">Operacional</span>
+                          </div>
+                          <p className="text-sm text-gray-600 ml-4">{recomendacoes.operacional}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+          </div>
+        </TabsContent>
