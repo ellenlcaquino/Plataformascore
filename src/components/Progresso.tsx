@@ -53,95 +53,16 @@ interface TeamAssessment {
 }
 
 const mockTeamData: TeamAssessment = {
-  id: 'team-001',
-  teamName: 'Squad Frontend',
-  createdDate: '2024-01-15',
-  dueDate: '2024-02-15',
-  totalMembers: 8,
-  completedResponses: 3,
-  inProgressResponses: 2,
-  pendingResponses: 3,
-  overallProgress: 45,
-  members: [
-    {
-      id: '1',
-      name: 'Ana Silva',
-      email: 'ana.silva@empresa.com',
-      role: 'QA Lead',
-      status: 'completed',
-      progress: 100,
-      completedDate: '2024-01-20',
-      initials: 'AS'
-    },
-    {
-      id: '2',
-      name: 'Carlos Santos',
-      email: 'carlos.santos@empresa.com',
-      role: 'QA Analyst',
-      status: 'completed',
-      progress: 100,
-      completedDate: '2024-01-22',
-      initials: 'CS'
-    },
-    {
-      id: '3',
-      name: 'Beatriz Costa',
-      email: 'beatriz.costa@empresa.com',
-      role: 'QA Engineer',
-      status: 'completed',
-      progress: 100,
-      completedDate: '2024-01-25',
-      initials: 'BC'
-    },
-    {
-      id: '4',
-      name: 'Daniel Oliveira',
-      email: 'daniel.oliveira@empresa.com',
-      role: 'QA Analyst',
-      status: 'in-progress',
-      progress: 65,
-      lastActivity: '2024-01-26',
-      initials: 'DO'
-    },
-    {
-      id: '5',
-      name: 'Elena Rodriguez',
-      email: 'elena.rodriguez@empresa.com',
-      role: 'QA Engineer',
-      status: 'in-progress',
-      progress: 32,
-      lastActivity: '2024-01-24',
-      initials: 'ER'
-    },
-    {
-      id: '6',
-      name: 'Felipe Martins',
-      email: 'felipe.martins@empresa.com',
-      role: 'QA Analyst',
-      status: 'pending',
-      progress: 0,
-      initials: 'FM'
-    },
-    {
-      id: '7',
-      name: 'Gabriela Lima',
-      email: 'gabriela.lima@empresa.com',
-      role: 'QA Engineer',
-      status: 'pending',
-      progress: 0,
-      initials: 'GL'
-    },
-    {
-      id: '8',
-      name: 'Hugo Ferreira',
-      email: 'hugo.ferreira@empresa.com',
-      role: 'QA Analyst',
-      status: 'overdue',
-      progress: 15,
-      lastActivity: '2024-01-18',
-      initials: 'HF'
-    }
-  ]
+  id: '',
+  teamName: '',
+  createdDate: '',
+  dueDate: '',
+  totalMembers: 0,
+  completedResponses: 0,
+  inProgressResponses: 0,
+  pendingResponses: 0,
+  overallProgress: 0,
+  members: []
 };
 
 const getStatusColor = (status: string) => {

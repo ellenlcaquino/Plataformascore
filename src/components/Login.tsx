@@ -6,7 +6,11 @@ import { QualityMapAppLogo } from './QualityMapAppLogo';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Users, Shield } from 'lucide-react';
 import svgPaths from '../imports/svg-8cuw9bbxi0';
 
-export function Login() {
+interface LoginProps {
+  onShowRegister?: () => void;
+}
+
+export function Login({ onShowRegister }: LoginProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -200,6 +204,20 @@ export function Login() {
               >
                 Esqueceu a senha?
               </button>
+            </div>
+
+            {/* Register Link */}
+            <div className="text-center pt-4 border-t border-gray-200">
+              <p className="text-gray-600 text-sm">
+                Não tem uma conta?{' '}
+                <button
+                  type="button"
+                  onClick={onShowRegister}
+                  className="text-[#0575e6] hover:text-[#0461c7] font-medium transition-colors"
+                >
+                  Criar conta gratuita
+                </button>
+              </p>
             </div>
           </form>
 

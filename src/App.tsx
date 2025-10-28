@@ -9,6 +9,7 @@ import { Rodadas } from "./components/Rodadas";
 import { Resultados } from "./components/Resultados";
 import { Importar } from "./components/Importar";
 import { Login } from "./components/Login";
+import { Register } from "./components/Register";
 import { Dashboard } from "./components/Dashboard";
 import { CompanyManagement } from "./components/CompanyManagement";
 import { UserProfile } from "./components/UserProfile";
@@ -37,8 +38,6 @@ function usePublicRoute() {
       const path = window.location.pathname;
       const hash = window.location.hash;
       
-      console.log('🔍 Checking route:', { path, hash, fullUrl: window.location.href });
-      
       // Detectar rota pública de score no pathname
       const publicScoreMatch = path.match(/^\/score\/([^\/]+)$/);
       
@@ -51,11 +50,11 @@ function usePublicRoute() {
       const demoScoreMatch = demoParam?.match(/^score\/([^\/]+)$/);
       
       if (publicScoreMatch) {
-        console.log('✅ Rota pública de score detectada no pathname:', publicScoreMatch[1]);
+        console.log('✅ Rota pública de score detectada:', publicScoreMatch[1]);
         setIsPublicRoute(true);
         setShareId(publicScoreMatch[1]);
       } else if (hashScoreMatch) {
-        console.log('✅ Rota pública de score detectada no hash:', hashScoreMatch[1]);
+        console.log('✅ Rota pública de score detectada (hash):', hashScoreMatch[1]);
         setIsPublicRoute(true);
         setShareId(hashScoreMatch[1]);
       } else if (demoScoreMatch) {
@@ -63,7 +62,7 @@ function usePublicRoute() {
         setIsPublicRoute(true);
         setShareId(demoScoreMatch[1]);
       } else {
-        console.log('❌ Nenhuma rota pública detectada');
+        // Rota normal - não é erro, apenas não é pública
         setIsPublicRoute(false);
         setShareId(null);
       }
@@ -91,7 +90,9 @@ function AppContent() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [assessmentResults, setAssessmentResults] = useState<any>(null);
   const [assessmentProgress, setAssessmentProgress] = useState({ progress: 0, currentStep: 'Visão Geral' });
-  const { isAuthenticated, loading } = useAuth();
+  const [showRegister, setShowRegister] = useState(false);
+  const [currentRodadaId, setCurrentRodadaId] = useState<string | undefined>(undefined);
+  const { isAuthenticated, loading, user } = useAuth();
   const { isPublicRoute, shareId } = usePublicRoute();
   
   // Aplicar cores da empresa dinamicamente
@@ -107,7 +108,9 @@ function AppContent() {
     );
   }
 
-  const handleStartAssessment = () => {
+  const handleStartAssessment = (rodadaId?: string) => {
+    console.log('📝 App.handleStartAssessment - rodadaId recebido:', rodadaId);
+    setCurrentRodadaId(rodadaId);
     setFormularioView('advanced-assessment');
   };
 
@@ -121,7 +124,9 @@ function AppContent() {
 
   const handleAssessmentComplete = (data: any) => {
     setAssessmentResults(data);
-    setActiveSection('qualityscore-resultados');
+    // NÃO mudar para resultados automaticamente - o líder deve gerar manualmente
+    // setActiveSection('qualityscore-resultados');
+    setActiveSection('qualityscore-progresso'); // Volta para rodadas
     setFormularioView('intro');
   };
 
@@ -144,11 +149,17 @@ function AppContent() {
         if (formularioView === 'intro') {
           return <FormularioIntro onStartAssessment={handleStartAssessment} />;
         } else if (formularioView === 'advanced-assessment') {
+          console.log('🔷 Renderizando QualityScoreAssessment');
+          console.log('   rodadaId:', currentRodadaId);
+          console.log('   userId:', user?.id);
+          console.log('   userId tipo:', typeof user?.id, '- É UUID?', user?.id?.includes('-') && user?.id?.length > 20);
           return (
             <QualityScoreAssessment 
               onComplete={handleAssessmentComplete}
               onBack={handleBackFromAssessment}
               onProgressUpdate={handleProgressUpdate}
+              rodadaId={currentRodadaId}
+              userId={user?.id}
             />
           );
         } else if (formularioView === 'map') {
@@ -180,8 +191,6 @@ function AppContent() {
         return <CompanyManagement />;
       case 'personas':
         return <PersonaSwitcher />;
-      case 'cadastros':
-        return <CadastrosManagement />;
       case 'public-demo':
         return <PublicDemo />;
       
@@ -210,7 +219,10 @@ function AppContent() {
   }
 
   if (!isAuthenticated) {
-    return <Login />;
+    if (showRegister) {
+      return <Register onBackToLogin={() => setShowRegister(false)} />;
+    }
+    return <Login onShowRegister={() => setShowRegister(true)} />;
   }
 
   return (
@@ -255,7 +267,7 @@ function AppContent() {
             </>
           )}
         </header>
-        <main className="flex-1 overflow-auto bg-slate-50/30">
+        <main className="flex-1 overflow-hidden bg-slate-50/30">
           {renderContent()}
         </main>
       </SidebarInset>

@@ -4,12 +4,12 @@ import { Label } from './ui/label';
 
 interface CheckboxQuestionProps {
   questionId: string;
-  options: string[];
-  value: string[];
+  options?: string[];
+  value?: string[];
   onChange: (questionId: string, value: string[]) => void;
 }
 
-export function CheckboxQuestion({ questionId, options, value = [], onChange }: CheckboxQuestionProps) {
+export function CheckboxQuestion({ questionId, options = [], value = [], onChange }: CheckboxQuestionProps) {
   const handleCheckboxChange = (option: string, checked: boolean) => {
     const newValue = checked
       ? [...value, option]
@@ -17,10 +17,13 @@ export function CheckboxQuestion({ questionId, options, value = [], onChange }: 
     onChange(questionId, newValue);
   };
 
+  // Validação de segurança para garantir que options é um array
+  const safeOptions = Array.isArray(options) ? options : [];
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {options.map((option) => (
+        {safeOptions.map((option) => (
           <div key={option} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
             <Checkbox
               id={`${questionId}-${option}`}

@@ -133,7 +133,7 @@ const getRecomendacoesPilar = (pilarId: string, score: number) => {
 export function Resultados({ assessmentResults }: ResultadosProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedQualityScoreId, setSelectedQualityScoreId] = useState<string>('');
-  const { qualityScores } = useQualityScore();
+  const { filteredQualityScores: qualityScores } = useQualityScore();
 
   return (
     <AccessControl requiredPermissions={['canViewResults']}>

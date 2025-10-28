@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
@@ -9,6 +9,12 @@ import { AccessControl } from './AccessControl';
 import { QualityScoreLayout } from './QualityScoreLayout';
 import { useQualityScore } from './QualityScoreManager';
 import { useAuth } from './AuthContext';
+import { useCompany } from './CompanyContext';
+import { useRodadasDB } from '../hooks/useRodadasDB';
+import { NovaRodadaForm } from './NovaRodadaFormNew';
+import { ReportView } from './ReportView';
+import { toast } from 'sonner@2.0.3';
+import { projectId, publicAnonKey } from '../utils/supabase/info';
 import { 
   Users, 
   CheckCircle, 
@@ -28,12 +34,13 @@ import {
   EyeOff,
   Settings,
   Target,
-  Archive
+  Archive,
+  Trash2
 } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from './ui/dialog';
 import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
@@ -73,263 +80,9 @@ interface Rodada {
   allowPartialResults: boolean;
 }
 
-// Mock data baseado nas regras de negócio com dados mais completos da TechCorp
-const mockRodadas: Rodada[] = [
-  {
-    id: 'rodada-001',
-    versaoId: 'V2024.01.001',
-    companyName: 'TechCorp Brasil',
-    companyId: 'company-001',
-    createdBy: 'leader-001',
-    createdByRole: 'leader',
-    createdDate: '2024-01-14',
-    dueDate: '2024-02-14',
-    status: 'ativa',
-    criterioEncerramento: 'automatico',
-    totalParticipantes: 8,
-    respostasCompletas: 3,
-    respostasEmProgresso: 2,
-    respostasPendentes: 2,
-    progressoGeral: 52,
-    resultadoGerado: false,
-    allowPartialResults: false,
-    participantes: [
-      {
-        id: 'p1',
-        name: 'Ana Silva',
-        email: 'ana.silva@techcorp.com.br',
-        role: 'QA Lead',
-        status: 'concluido',
-        progress: 100,
-        completedDate: '2024-01-20',
-        initials: 'AS',
-        canViewResults: true
-      },
-      {
-        id: 'p2',
-        name: 'Carlos Santos',
-        email: 'carlos.santos@techcorp.com.br',
-        role: 'Senior QA',
-        status: 'concluido',
-        progress: 100,
-        completedDate: '2024-01-22',
-        initials: 'CS',
-        canViewResults: true
-      },
-      {
-        id: 'p3',
-        name: 'Maria Oliveira',
-        email: 'maria.oliveira@techcorp.com.br',
-        role: 'QA Analyst',
-        status: 'concluido',
-        progress: 100,
-        completedDate: '2024-01-25',
-        initials: 'MO',
-        canViewResults: false
-      },
-      {
-        id: 'p4',
-        name: 'João Pereira',
-        email: 'joao.pereira@techcorp.com.br',
-        role: 'Tech Lead',
-        status: 'respondendo',
-        progress: 75,
-        lastActivity: '2024-01-26',
-        initials: 'JP',
-        canViewResults: false
-      },
-      {
-        id: 'p5',
-        name: 'Julia Costa',
-        email: 'julia.costa@techcorp.com.br',
-        role: 'QA Junior',
-        status: 'respondendo',
-        progress: 32,
-        lastActivity: '2024-01-24',
-        initials: 'JC',
-        canViewResults: false
-      },
-      {
-        id: 'p6',
-        name: 'Felipe Martins',
-        email: 'felipe.martins@techcorp.com.br',
-        role: 'QA Analyst',
-        status: 'pendente',
-        progress: 0,
-        initials: 'FM',
-        canViewResults: false
-      },
-      {
-        id: 'p7',
-        name: 'Gabriela Lima',
-        email: 'gabriela.lima@techcorp.com.br',
-        role: 'QA Engineer',
-        status: 'pendente',
-        progress: 0,
-        initials: 'GL',
-        canViewResults: false
-      },
-      {
-        id: 'p8',
-        name: 'Hugo Ferreira',
-        email: 'hugo.ferreira@techcorp.com.br',
-        role: 'QA Analyst',
-        status: 'atrasado',
-        progress: 15,
-        lastActivity: '2024-01-18',
-        initials: 'HF',
-        canViewResults: false
-      }
-    ]
-  },
-  {
-    id: 'rodada-002',
-    versaoId: 'V2023.12.001',
-    companyName: 'TechCorp Brasil',
-    companyId: 'company-001',
-    createdBy: 'leader-001',
-    createdByRole: 'leader',
-    createdDate: '2023-12-01',
-    dueDate: '2023-12-31',
-    status: 'encerrada',
-    criterioEncerramento: 'manual',
-    totalParticipantes: 4,
-    respostasCompletas: 4,
-    respostasEmProgresso: 0,
-    respostasPendentes: 0,
-    progressoGeral: 100,
-    resultadoGerado: true,
-    resultadoId: 'resultado-002',
-    allowPartialResults: true,
-    participantes: [
-      {
-        id: 'p1',
-        name: 'Ana Silva',
-        email: 'ana.silva@techcorp.com.br',
-        role: 'QA Lead',
-        status: 'concluido',
-        progress: 100,
-        completedDate: '2023-12-15',
-        initials: 'AS',
-        canViewResults: true
-      },
-      {
-        id: 'p2',
-        name: 'Carlos Santos',
-        email: 'carlos.santos@techcorp.com.br',
-        role: 'Senior QA',
-        status: 'concluido',
-        progress: 100,
-        completedDate: '2023-12-18',
-        initials: 'CS',
-        canViewResults: true
-      },
-      {
-        id: 'p6',
-        name: 'Fernando Alves',
-        email: 'fernando.alves@techcorp.com.br',
-        role: 'QA Mid',
-        status: 'concluido',
-        progress: 100,
-        completedDate: '2023-12-20',
-        initials: 'FA',
-        canViewResults: false
-      },
-      {
-        id: 'p7',
-        name: 'Lucia Santos',
-        email: 'lucia.santos@techcorp.com.br',
-        role: 'QA Senior',
-        status: 'concluido',
-        progress: 100,
-        completedDate: '2023-12-28',
-        initials: 'LS',
-        canViewResults: true
-      }
-    ]
-  },
-  {
-    id: 'rodada-003',
-    versaoId: 'V2024.02.001',
-    companyName: 'TechCorp Brasil',
-    companyId: 'company-001',
-    createdBy: 'leader-002',
-    createdByRole: 'leader',
-    createdDate: '2024-02-01',
-    dueDate: '2024-03-01',
-    status: 'rascunho',
-    criterioEncerramento: 'manual',
-    totalParticipantes: 6,
-    respostasCompletas: 0,
-    respostasEmProgresso: 0,
-    respostasPendentes: 6,
-    progressoGeral: 0,
-    resultadoGerado: false,
-    allowPartialResults: true,
-    participantes: [
-      {
-        id: 't1',
-        name: 'Ricardo Fernandes',
-        email: 'ricardo.fernandes@techcorp.com.br',
-        role: 'QA Manager',
-        status: 'pendente',
-        progress: 0,
-        initials: 'RF',
-        canViewResults: true
-      },
-      {
-        id: 't2',
-        name: 'Patricia Almeida',
-        email: 'patricia.almeida@techcorp.com.br',
-        role: 'QA Senior',
-        status: 'pendente',
-        progress: 0,
-        initials: 'PA',
-        canViewResults: true
-      },
-      {
-        id: 't3',
-        name: 'André Nascimento',
-        email: 'andre.nascimento@techcorp.com.br',
-        role: 'QA Analyst',
-        status: 'pendente',
-        progress: 0,
-        initials: 'AN',
-        canViewResults: false
-      },
-      {
-        id: 't4',
-        name: 'Marina Barbosa',
-        email: 'marina.barbosa@techcorp.com.br',
-        role: 'QA Engineer',
-        status: 'pendente',
-        progress: 0,
-        initials: 'MB',
-        canViewResults: false
-      },
-      {
-        id: 't5',
-        name: 'Bruno Martins',
-        email: 'bruno.martins@techcorp.com.br',
-        role: 'QA Junior',
-        status: 'pendente',
-        progress: 0,
-        initials: 'BM',
-        canViewResults: false
-      },
-      {
-        id: 't6',
-        name: 'Camila Torres',
-        email: 'camila.torres@techcorp.com.br',
-        role: 'QA Analyst',
-        status: 'pendente',
-        progress: 0,
-        initials: 'CT',
-        canViewResults: false
-      }
-    ]
-  }
-];
+// Mock data REMOVIDO - Sistema usa apenas dados reais do banco de dados
+// Array vazio mantido para compatibilidade
+const mockRodadas_DEPRECATED: Rodada[] = [];
 
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -401,12 +154,62 @@ export function Rodadas() {
 }
 
 function RodadasContent() {
-  const [rodadas] = useState<Rodada[]>(mockRodadas);
+  const { rodadas: rodadasDB, loading: loadingRodadas, fetchRodadas } = useRodadasDB();
+  const [rodadas, setRodadas] = useState<Rodada[]>([]);
   const [activeTab, setActiveTab] = useState('ativas');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRodada, setSelectedRodada] = useState<Rodada | null>(null);
   const [showNovaRodadaModal, setShowNovaRodadaModal] = useState(false);
+  const [showReportView, setShowReportView] = useState(false);
+  const [selectedResultado, setSelectedResultado] = useState<any>(null);
   const { user } = useAuth();
+  const { selectedCompany } = useCompany();
+
+  // Sincronizar rodadas do banco com o estado local
+  useEffect(() => {
+    // SEMPRE usar dados do banco quando disponíveis, mesmo que vazio
+    if (!loadingRodadas) {
+      if (rodadasDB.length > 0) {
+        // Transformar formato do banco para formato do componente
+        const transformedRodadas: Rodada[] = rodadasDB.map(r => ({
+          id: r.id,
+          versaoId: r.versao_id,
+          companyName: r.companyName,
+          companyId: r.company_id,
+          createdBy: r.created_by,
+          createdByRole: r.createdByRole,
+          createdDate: r.created_at,
+          dueDate: r.due_date,
+          status: r.status,
+          criterioEncerramento: r.criterio_encerramento,
+          totalParticipantes: r.totalParticipantes,
+          respostasCompletas: r.respostasCompletas,
+          respostasEmProgresso: r.respostasEmProgresso,
+          respostasPendentes: r.respostasPendentes,
+          progressoGeral: r.progressoGeral,
+          participantes: r.participantes.map(p => ({
+            id: p.id,
+            name: p.name,
+            email: p.email,
+            role: p.role,
+            status: p.status,
+            progress: p.progress,
+            lastActivity: p.lastActivity,
+            completedDate: p.completedDate,
+            initials: p.initials,
+            canViewResults: p.canViewResults
+          })),
+          resultadoGerado: r.resultadoGerado,
+          resultadoId: r.resultadoId,
+          allowPartialResults: r.allowPartialResults
+        }));
+        setRodadas(transformedRodadas);
+      } else {
+        // Lista vazia - sem rodadas criadas ainda
+        setRodadas([]);
+      }
+    }
+  }, [rodadasDB, loadingRodadas]);
 
   const filteredRodadas = useMemo(() => {
     let filtered = rodadas;
@@ -418,8 +221,12 @@ function RodadasContent() {
       filtered = filtered.filter(r => r.status === 'encerrada');
     }
     
-    // Filtrar por empresa (se não for manager)
-    if (user?.role !== 'manager' && user?.companyId) {
+    // Filtrar por empresa selecionada no whitelabel (prioridade máxima)
+    if (selectedCompany) {
+      filtered = filtered.filter(r => r.companyId === selectedCompany.id);
+    }
+    // Ou filtrar por empresa do usuário (se não for manager)
+    else if (user?.role !== 'manager' && user?.companyId) {
       filtered = filtered.filter(r => r.companyId === user.companyId);
     }
     
@@ -432,16 +239,228 @@ function RodadasContent() {
     }
     
     return filtered;
-  }, [rodadas, activeTab, searchTerm, user]);
+  }, [rodadas, activeTab, searchTerm, user, selectedCompany]);
 
-  const handleGerarResultado = (rodadaId: string) => {
-    console.log('Gerando resultado para rodada:', rodadaId);
-    // Implementar lógica de geração de resultado
+  const handleGerarResultado = async (rodadaId: string) => {
+    const rodada = rodadas.find(r => r.id === rodadaId);
+    if (!rodada) {
+      toast.error('Rodada não encontrada');
+      return;
+    }
+
+    const participantesPendentes = rodada.totalParticipantes - rodada.respostasCompletas;
+    const isParcial = participantesPendentes > 0;
+    
+    // Confirmar geração
+    const confirmMessage = isParcial
+      ? `Você está prestes a gerar resultados PARCIAIS com ${rodada.respostasCompletas} de ${rodada.totalParticipantes} respostas. ${participantesPendentes} pessoa${participantesPendentes > 1 ? 's ainda não responderam' : ' ainda não respondeu'}. Deseja continuar?`
+      : `Todos os ${rodada.totalParticipantes} participantes responderam! Deseja gerar os resultados finais?`;
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      toast.loading('Gerando resultados...', { id: 'gerar-resultado' });
+      
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2b631963/rodadas/${rodadaId}/gerar-resultados`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${publicAnonKey}`
+          },
+          body: JSON.stringify({
+            tipo: isParcial ? 'parcial' : 'final',
+            generated_by: user?.userId
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao gerar resultados');
+      }
+
+      toast.success(data.message || 'Resultados gerados com sucesso!', { id: 'gerar-resultado' });
+      
+      // Recarregar rodadas
+      await fetchRodadas();
+      
+    } catch (error) {
+      console.error('Erro ao gerar resultados:', error);
+      toast.error(error.message || 'Erro ao gerar resultados', { id: 'gerar-resultado' });
+    }
+  };
+
+  const handleVerResultados = async (rodadaId: string) => {
+    try {
+      toast.loading('Carregando resultados...', { id: 'carregar-resultado' });
+      
+      // Buscar resultado da rodada
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2b631963/rodadas/${rodadaId}/resultado`,
+        {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${publicAnonKey}`
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao carregar resultados');
+      }
+
+      toast.success('Resultados carregados!', { id: 'carregar-resultado' });
+      
+      // Encontrar a rodada para passar informações adicionais
+      const rodada = rodadas.find(r => r.id === rodadaId);
+      
+      setSelectedResultado({
+        ...data.resultado,
+        rodadaInfo: rodada ? {
+          versaoId: rodada.versaoId,
+          companyName: rodada.companyName,
+          dueDate: rodada.dueDate,
+          status: rodada.status
+        } : undefined
+      });
+      setShowReportView(true);
+      
+    } catch (error) {
+      console.error('Erro ao carregar resultados:', error);
+      toast.error(error.message || 'Erro ao carregar resultados', { id: 'carregar-resultado' });
+    }
   };
 
   const handleEncerrarRodada = (rodadaId: string) => {
     console.log('Encerrando rodada:', rodadaId);
     // Implementar lógica de encerramento
+  };
+
+  const handleDeletarRodada = async (rodadaId: string) => {
+    const rodada = rodadas.find(r => r.id === rodadaId);
+    if (!rodada) {
+      toast.error('Rodada não encontrada');
+      return;
+    }
+
+    // Confirmar exclusão
+    const confirmMessage = `Tem certeza que deseja EXCLUIR a rodada ${rodada.versaoId} da empresa ${rodada.companyName}?\n\nEsta ação não pode ser desfeita e irá remover:\n- ${rodada.totalParticipantes} participantes\n- ${rodada.respostasCompletas} respostas completas\n- Todos os dados relacionados`;
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      toast.loading('Excluindo rodada...', { id: 'deletar-rodada' });
+      
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2b631963/rodadas/${rodadaId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${publicAnonKey}`
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao excluir rodada');
+      }
+
+      toast.success('Rodada excluída com sucesso!', { id: 'deletar-rodada' });
+      
+      // Recarregar rodadas
+      await fetchRodadas();
+      
+    } catch (error) {
+      console.error('Erro ao excluir rodada:', error);
+      toast.error(error.message || 'Erro ao excluir rodada', { id: 'deletar-rodada' });
+    }
+  };
+
+  const handleDeletarTodasRodadas = async () => {
+    // Para líderes e membros, usar a empresa do usuário
+    // Para managers, exigir seleção de empresa
+    let companyId: string;
+    let companyName: string;
+    
+    if (user?.role === 'manager') {
+      if (!selectedCompany) {
+        toast.error('Selecione uma empresa primeiro');
+        return;
+      }
+      companyId = selectedCompany.id;
+      companyName = selectedCompany.name;
+    } else {
+      // Líder ou Membro
+      if (!user?.companyId) {
+        toast.error('Empresa não encontrada');
+        return;
+      }
+      companyId = user.companyId;
+      companyName = user.companyName || 'sua empresa';
+    }
+
+    const rodadasParaDeletar = filteredRodadas.length;
+
+    if (rodadasParaDeletar === 0) {
+      toast.error('Não há rodadas para excluir');
+      return;
+    }
+
+    // Confirmar exclusão
+    const confirmMessage = `⚠️ ATENÇÃO: Você está prestes a EXCLUIR TODAS AS ${rodadasParaDeletar} RODADAS da empresa "${companyName}".\n\n` +
+      `Esta ação é IRREVERSÍVEL e irá remover:\n` +
+      `- Todas as rodadas (ativas e encerradas)\n` +
+      `- Todos os participantes\n` +
+      `- Todas as respostas\n` +
+      `- Todos os resultados gerados\n\n` +
+      `Digite "EXCLUIR TUDO" para confirmar:`;
+    
+    const confirmText = window.prompt(confirmMessage);
+    
+    if (confirmText !== 'EXCLUIR TUDO') {
+      toast.info('Exclusão cancelada');
+      return;
+    }
+
+    try {
+      toast.loading(`Excluindo ${rodadasParaDeletar} rodada(s)...`, { id: 'deletar-todas' });
+      
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-2b631963/rodadas/company/${companyId}/all`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${publicAnonKey}`
+          }
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erro ao excluir rodadas');
+      }
+
+      toast.success(`${data.deletedCount} rodada(s) excluída(s) com sucesso!`, { id: 'deletar-todas' });
+      
+      // Recarregar rodadas
+      await fetchRodadas();
+      
+    } catch (error) {
+      console.error('Erro ao excluir todas as rodadas:', error);
+      toast.error(error.message || 'Erro ao excluir rodadas', { id: 'deletar-todas' });
+    }
   };
 
   const handleToggleResultAccess = (rodadaId: string, participanteId: string) => {
@@ -467,6 +486,15 @@ function RodadasContent() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              {filteredRodadas.length > 0 && (
+                <Button 
+                  variant="destructive"
+                  onClick={handleDeletarTodasRodadas}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Excluir Todas ({filteredRodadas.length})
+                </Button>
+              )}
               <Dialog open={showNovaRodadaModal} onOpenChange={setShowNovaRodadaModal}>
                 <DialogTrigger asChild>
                   <Button>
@@ -477,8 +505,17 @@ function RodadasContent() {
                 <DialogContent className="max-w-md">
                   <DialogHeader>
                     <DialogTitle>Criar Nova Rodada</DialogTitle>
+                    <DialogDescription>
+                      Configure uma nova rodada de avaliação QualityScore para sua equipe.
+                    </DialogDescription>
                   </DialogHeader>
-                  <NovaRodadaForm onClose={() => setShowNovaRodadaModal(false)} />
+                  <NovaRodadaForm 
+                    onClose={() => setShowNovaRodadaModal(false)}
+                    onSuccess={async () => {
+                      // Recarregar lista de rodadas do banco
+                      await fetchRodadas();
+                    }}
+                  />
                 </DialogContent>
               </Dialog>
             </div>
@@ -501,8 +538,18 @@ function RodadasContent() {
             </div>
           </Card>
 
-          {/* Tabs para rodadas ativas e encerradas */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          {/* Loading state */}
+          {loadingRodadas ? (
+            <Card className="p-8">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Carregando rodadas...</p>
+              </div>
+            </Card>
+          ) : (
+            <>
+              {/* Tabs para rodadas ativas e encerradas */}
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList>
               <TabsTrigger value="ativas">Rodadas Ativas ({filteredRodadas.filter(r => r.status === 'ativa' || r.status === 'rascunho').length})</TabsTrigger>
               <TabsTrigger value="encerradas">Encerradas ({filteredRodadas.filter(r => r.status === 'encerrada').length})</TabsTrigger>
@@ -516,6 +563,8 @@ function RodadasContent() {
                   onSelect={setSelectedRodada}
                   onGerarResultado={handleGerarResultado}
                   onEncerrarRodada={handleEncerrarRodada}
+                  onDeletarRodada={handleDeletarRodada}
+                  onVerResultados={handleVerResultados}
                 />
               ))}
               {filteredRodadas.filter(r => r.status === 'ativa' || r.status === 'rascunho').length === 0 && (
@@ -539,6 +588,7 @@ function RodadasContent() {
                   onSelect={setSelectedRodada}
                   onGerarResultado={handleGerarResultado}
                   onEncerrarRodada={handleEncerrarRodada}
+                  onDeletarRodada={handleDeletarRodada}
                 />
               ))}
               {filteredRodadas.filter(r => r.status === 'encerrada').length === 0 && (
@@ -559,6 +609,20 @@ function RodadasContent() {
               onToggleResultAccess={handleToggleResultAccess}
             />
           )}
+
+          {/* Modal de Report View */}
+          {showReportView && selectedResultado && (
+            <Dialog open={showReportView} onOpenChange={setShowReportView}>
+              <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+                <ReportView 
+                  resultado={selectedResultado}
+                  rodadaInfo={selectedResultado.rodadaInfo}
+                />
+              </DialogContent>
+            </Dialog>
+          )}
+            </>
+          )}
         </div>
       </div>
     </QualityScoreLayout>
@@ -569,12 +633,16 @@ function RodadaCard({
   rodada, 
   onSelect, 
   onGerarResultado, 
-  onEncerrarRodada 
+  onEncerrarRodada,
+  onDeletarRodada,
+  onVerResultados 
 }: { 
   rodada: Rodada; 
   onSelect: (rodada: Rodada) => void;
   onGerarResultado: (id: string) => void;
   onEncerrarRodada: (id: string) => void;
+  onDeletarRodada: (id: string) => void;
+  onVerResultados?: (id: string) => void;
 }) {
   const podeGerar = rodada.status === 'ativa' && 
     (rodada.criterioEncerramento === 'manual' || 
@@ -601,9 +669,20 @@ function RodadaCard({
         </div>
         <div className="flex items-center gap-2">
           {rodada.status === 'ativa' && podeGerar && (
-            <Button size="sm" onClick={() => onGerarResultado(rodada.id)}>
+            <Button 
+              size="sm" 
+              onClick={() => onGerarResultado(rodada.id)}
+              className={
+                rodada.respostasCompletas < rodada.totalParticipantes
+                  ? 'bg-yellow-600 hover:bg-yellow-700'
+                  : 'bg-green-600 hover:bg-green-700'
+              }
+            >
               <BarChart3 className="h-4 w-4 mr-2" />
-              Gerar Resultado
+              {rodada.respostasCompletas < rodada.totalParticipantes
+                ? 'Gerar Resultados Parciais'
+                : 'Gerar Resultados Finais'
+              }
             </Button>
           )}
           {rodada.status === 'ativa' && (
@@ -616,12 +695,24 @@ function RodadaCard({
               Encerrar
             </Button>
           )}
-          {rodada.resultadoGerado && (
-            <Button variant="outline" size="sm">
+          {rodada.resultadoGerado && onVerResultados && (
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => onVerResultados(rodada.id)}
+            >
               <BarChart3 className="h-4 w-4 mr-2" />
               Ver Resultados
             </Button>
           )}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={() => onDeletarRodada(rodada.id)}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => onSelect(rodada)}>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
@@ -1054,32 +1145,88 @@ function RodadaDetailsModal({
   );
 }
 
-// Lista de empresas disponíveis para Managers
-const EMPRESAS_DISPONIVEIS = [
-  { id: 'company-001', name: 'TechCorp Brasil', sector: 'Tecnologia' },
-  { id: 'company-002', name: 'InovaSoft', sector: 'Software' },
-  { id: 'company-003', name: 'DataTech Solutions', sector: 'Análise de Dados' },
-  { id: 'company-004', name: 'CloudFirst', sector: 'Cloud Computing' },
-  { id: 'company-005', name: 'MobileDev Co', sector: 'Desenvolvimento Mobile' }
-];
+// Removido - NovaRodadaForm agora está em arquivo separado
 
-function NovaRodadaForm({ onClose }: { onClose: () => void }) {
+function NovaRodadaFormOLD_DEPRECATED({ onClose, onSuccess }: { onClose: () => void; onSuccess?: () => void }) {
   const { user } = useAuth();
   const isManager = user?.role === 'manager';
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     companyId: isManager ? '' : user?.companyId || '',
     companyName: isManager ? '' : user?.companyName || '',
     dueDate: '',
     criterioEncerramento: 'automatico',
-    allowPartialResults: false,
-    participantes: ''
+    allowPartialResults: false
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [participantes, setParticipantes] = useState<ParticipanteForm[]>([
+    { name: '', email: '', role: '' }
+  ]);
+
+  const addParticipante = () => {
+    setParticipantes([...participantes, { name: '', email: '', role: '' }]);
+  };
+
+  const removeParticipante = (index: number) => {
+    if (participantes.length > 1) {
+      setParticipantes(participantes.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateParticipante = (index: number, field: keyof ParticipanteForm, value: string) => {
+    const updated = [...participantes];
+    updated[index][field] = value;
+    setParticipantes(updated);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Criando nova rodada:', formData);
-    onClose();
+    setIsSubmitting(true);
+
+    try {
+      // Parsear emails dos participantes
+      const emails = formData.participantes
+        .split('\n')
+        .map(email => email.trim())
+        .filter(email => email.length > 0);
+
+      if (emails.length === 0) {
+        toast.error('Adicione pelo menos um participante');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Chamar API para criar rodada
+      const response = await fetch(`https://${projectId}.supabase.co/functions/v1/make-server-2b631963/rodadas`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${publicAnonKey}`,
+        },
+        body: JSON.stringify({
+          company_id: formData.companyId,
+          due_date: formData.dueDate,
+          criterio_encerramento: formData.criterioEncerramento,
+          created_by: user?.id,
+          participantes: emails.map(email => ({ email })),
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Erro ao criar rodada');
+      }
+
+      toast.success('Rodada criada com sucesso!');
+      onSuccess?.();
+      onClose();
+    } catch (error: any) {
+      console.error('Error creating rodada:', error);
+      toast.error(error.message || 'Erro ao criar rodada');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCompanySelect = (companyId: string) => {
@@ -1173,11 +1320,11 @@ function NovaRodadaForm({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="flex justify-end gap-3 pt-4">
-        <Button type="button" variant="outline" onClick={onClose}>
+        <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
           Cancelar
         </Button>
-        <Button type="submit">
-          Criar Rodada
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Criando...' : 'Criar Rodada'}
         </Button>
       </div>
     </form>

@@ -5,7 +5,7 @@ import React from 'react';
 export function Component0Variant4() {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      <div className="text-2xl">☹️</div>
+      <div className="text-3xl">☹️</div>
     </div>
   );
 }
@@ -14,7 +14,7 @@ export function Component0Variant4() {
 export function NeutralFace() {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      <div className="text-2xl">😐</div>
+      <div className="text-3xl">😐</div>
     </div>
   );
 }
@@ -23,7 +23,7 @@ export function NeutralFace() {
 export function SlightlySmilingFace() {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      <div className="text-2xl">🙂</div>
+      <div className="text-3xl">🙂</div>
     </div>
   );
 }
@@ -32,7 +32,7 @@ export function SlightlySmilingFace() {
 export function SmilingFaceWithSmilingEyes() {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      <div className="text-2xl">😊</div>
+      <div className="text-3xl">😊</div>
     </div>
   );
 }
@@ -41,7 +41,7 @@ export function SmilingFaceWithSmilingEyes() {
 export function BeamingFaceWithSmilingEyes() {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      <div className="text-2xl">😄</div>
+      <div className="text-3xl">😄</div>
     </div>
   );
 }
@@ -50,7 +50,7 @@ export function BeamingFaceWithSmilingEyes() {
 export function SmilingFaceWithHeartEyes() {
   return (
     <div className="relative w-full h-full flex items-center justify-center">
-      <div className="text-2xl">😍</div>
+      <div className="text-3xl">😍</div>
     </div>
   );
 }

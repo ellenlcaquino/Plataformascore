@@ -73,57 +73,11 @@ export function PublicDemo() {
   return (
     <div className="p-8 space-y-6 max-w-4xl mx-auto">
       <div>
-        <h2 className="text-2xl">Demo Público</h2>
+        <h2 className="text-2xl">Report View</h2>
         <p className="text-muted-foreground">
-          Visualize a página pública de compartilhamento do QualityScore
+          Visualize como seus resultados aparecem para o público
         </p>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Como Acessar</CardTitle>
-          <CardDescription>
-            Formas de visualizar a demo pública
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm">
-              1
-            </div>
-            <div className="flex-1">
-              <div className="font-medium mb-1">URL Direta</div>
-              <code className="text-xs bg-background p-1 rounded block">
-                /score/demo-results
-              </code>
-            </div>
-          </div>
-          
-          <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm">
-              2
-            </div>
-            <div className="flex-1">
-              <div className="font-medium mb-1">Parâmetro URL</div>
-              <code className="text-xs bg-background p-1 rounded block">
-                ?demo=score/demo-results
-              </code>
-            </div>
-          </div>
-          
-          <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-            <div className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm">
-              3
-            </div>
-            <div className="flex-1">
-              <div className="font-medium mb-1">Preview Interno</div>
-              <div className="text-sm text-muted-foreground">
-                Use o botão abaixo para visualizar
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {scoreLinks.map((link) => (
         <Card key={link.id}>

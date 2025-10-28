@@ -13,6 +13,7 @@ import { PublicShareManager } from './PublicShareManager';
 import { AccessControl } from './AccessControl';
 import { QualityScoreLayout } from './QualityScoreLayout';
 import { useQualityScore } from './QualityScoreManager';
+import { useAuth } from './AuthContext';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { 
   BarChart3, 
@@ -135,14 +136,37 @@ const getRecomendacoesPilar = (pilarId: string, score: number) => {
 export function Resultados({ assessmentResults }: ResultadosProps) {
   const [activeTab, setActiveTab] = useState('overview');
   const [selectedQualityScoreId, setSelectedQualityScoreId] = useState<string>('');
-  const { qualityScores } = useQualityScore();
+  const { filteredQualityScores: allQualityScores } = useQualityScore();
+  const { user } = useAuth();
+
+  // Filtrar QualityScores baseado no role do usuário
+  const qualityScores = useMemo(() => {
+    if (!user) return [];
+    
+    // Manager vê todos os QualityScores
+    if (user.role === 'manager') {
+      return allQualityScores;
+    }
+    
+    // Leader vê apenas QualityScores de sua empresa
+    if (user.role === 'leader') {
+      return allQualityScores.filter(qs => qs.companyId === user.companyId);
+    }
+    
+    // Member vê apenas QualityScores de sua empresa (read-only, sem opção de criar)
+    return allQualityScores.filter(qs => qs.companyId === user.companyId);
+  }, [allQualityScores, user]);
 
   return (
     <AccessControl requiredPermissions={['canViewResults']}>
       <QualityScoreLayout 
         currentSection="qualityscore-resultados" 
         title="Resultados QualityScore"
-        description="Análise completa da maturidade em qualidade de software com integração inteligente para Goals"
+        description={
+          user?.role === 'manager' 
+            ? 'Análise completa da maturidade em qualidade de software de todas as empresas'
+            : `Resultados de QualityScore da ${user?.companyName}`
+        }
       >
         <div className="bg-gray-50 min-h-full p-6">
           <div className="max-w-7xl mx-auto">
@@ -313,144 +337,105 @@ function ResultadosContent({ assessmentResults, qualityScores, selectedQualitySc
       });
     }
     
-    // Dados de exemplo expandidos se não há QualityScore selecionado
-    // ✅ IMPORTANTE: Dados de exemplo com IDs individuais das perguntas para teste
-    return [
-      {
-        id: 'persona1',
-        nome: 'Ana Silva',
-        empresa: dadosProcessados.empresa,
-        cargo: 'QA Lead',
-        respostas: {
-          // Processos e Estratégias (16 perguntas)
-          'process1': 5, 'process2': 5, 'process3': 4, 'process4': 5, 'process5': 4,
-          'process6': 4, 'process7': 5, 'process8': 4, 'process9': 4, 'process10': 5,
-          'process11': 4, 'process12': 4, 'process13': 5, 'process14': 4, 'process15': 5, 'process16': 4,
-          // Testes Automatizados (16 perguntas)
-          'auto1': 3, 'auto2': 4, 'auto3': 3, 'auto4': 4, 'auto5': 4,
-          'auto6': 3, 'auto7': 4, 'auto8': 4, 'auto9': 3, 'auto10': 4,
-          'auto11': 4, 'auto12': 3, 'auto13': 4, 'auto14': 4, 'auto15': 3, 'auto16': 4,
-          // Métricas (14 perguntas)
-          'metric1': 4, 'metric2': 3, 'metric3': 4, 'metric4': 3, 'metric5': 4,
-          'metric6': 3, 'metric7': 4, 'metric8': 3, 'metric9': 4, 'metric10': 3,
-          'metric11': 4, 'metric12': 3, 'metric13': 4, 'metric14': 4,
-          // Documentações (11 perguntas)
-          'doc1': 5, 'doc2': 4, 'doc3': 4, 'doc4': 5, 'doc5': 4,
-          'doc6': 4, 'doc7': 4, 'doc8': 5, 'doc9': 4, 'doc10': 4, 'doc11': 4,
-          // Modalidades de Testes (12 perguntas, excluindo test12 que é textual)
-          'test1': 4, 'test2': 4, 'test3': 4, 'test4': 3, 'test5': 4,
-          'test6': 4, 'test7': 4, 'test8': 3, 'test9': 4, 'test10': 4, 'test11': 4,
-          // QAOPS (10 perguntas)
-          'qaops1': 3, 'qaops2': 3, 'qaops3': 4, 'qaops4': 3, 'qaops5': 3,
-          'qaops6': 4, 'qaops7': 3, 'qaops8': 3, 'qaops9': 4, 'qaops10': 3,
-          // Liderança (12 perguntas)
-          'leader1': 5, 'leader2': 5, 'leader3': 4, 'leader4': 5, 'leader5': 4,
-          'leader6': 5, 'leader7': 4, 'leader8': 5, 'leader9': 4, 'leader10': 5,
-          'leader11': 4, 'leader12': 5
-        }
-      },
-      {
-        id: 'persona2',
-        nome: 'Carlos Santos',
-        empresa: dadosProcessados.empresa,
-        cargo: 'Senior QA',
-        respostas: {
-          // Processos e Estratégias (scores mais baixos)
-          'process1': 3, 'process2': 4, 'process3': 3, 'process4': 4, 'process5': 3,
-          'process6': 4, 'process7': 3, 'process8': 4, 'process9': 3, 'process10': 4,
-          'process11': 3, 'process12': 4, 'process13': 3, 'process14': 4, 'process15': 3, 'process16': 4,
-          // Testes Automatizados (scores altos)
-          'auto1': 5, 'auto2': 5, 'auto3': 4, 'auto4': 5, 'auto5': 5,
-          'auto6': 4, 'auto7': 5, 'auto8': 4, 'auto9': 5, 'auto10': 4,
-          'auto11': 5, 'auto12': 4, 'auto13': 5, 'auto14': 4, 'auto15': 5, 'auto16': 4,
-          // Métricas (scores moderados)
-          'metric1': 2, 'metric2': 3, 'metric3': 3, 'metric4': 3, 'metric5': 4,
-          'metric6': 3, 'metric7': 3, 'metric8': 3, 'metric9': 4, 'metric10': 2,
-          'metric11': 3, 'metric12': 3, 'metric13': 4, 'metric14': 3,
-          // Documentações
-          'doc1': 3, 'doc2': 3, 'doc3': 4, 'doc4': 3, 'doc5': 4,
-          'doc6': 3, 'doc7': 3, 'doc8': 4, 'doc9': 3, 'doc10': 4, 'doc11': 3,
-          // Modalidades de Testes
-          'test1': 5, 'test2': 4, 'test3': 4, 'test4': 5, 'test5': 4,
-          'test6': 4, 'test7': 5, 'test8': 4, 'test9': 4, 'test10': 4, 'test11': 5,
-          // QAOPS
-          'qaops1': 4, 'qaops2': 4, 'qaops3': 4, 'qaops4': 4, 'qaops5': 4,
-          'qaops6': 4, 'qaops7': 4, 'qaops8': 4, 'qaops9': 4, 'qaops10': 4,
-          // Liderança (scores baixos)
-          'leader1': 3, 'leader2': 3, 'leader3': 3, 'leader4': 3, 'leader5': 2,
-          'leader6': 3, 'leader7': 3, 'leader8': 3, 'leader9': 3, 'leader10': 3,
-          'leader11': 3, 'leader12': 3
-        }
-      },
-      {
-        id: 'persona3',
-        nome: 'Maria Oliveira',
-        empresa: dadosProcessados.empresa,
-        cargo: 'QA Analyst',
-        respostas: {
-          // Processos e Estratégias (scores baixos)
-          'process1': 3, 'process2': 3, 'process3': 2, 'process4': 3, 'process5': 3,
-          'process6': 3, 'process7': 3, 'process8': 3, 'process9': 2, 'process10': 3,
-          'process11': 3, 'process12': 3, 'process13': 3, 'process14': 2, 'process15': 3, 'process16': 3,
-          // Testes Automatizados (scores baixos)
-          'auto1': 2, 'auto2': 3, 'auto3': 3, 'auto4': 2, 'auto5': 3,
-          'auto6': 2, 'auto7': 3, 'auto8': 3, 'auto9': 2, 'auto10': 3,
-          'auto11': 3, 'auto12': 2, 'auto13': 3, 'auto14': 3, 'auto15': 2, 'auto16': 3,
-          // Métricas
-          'metric1': 3, 'metric2': 4, 'metric3': 2, 'metric4': 3, 'metric5': 2,
-          'metric6': 3, 'metric7': 2, 'metric8': 3, 'metric9': 2, 'metric10': 3,
-          'metric11': 2, 'metric12': 3, 'metric13': 3, 'metric14': 2,
-          // Documentações
-          'doc1': 4, 'doc2': 3, 'doc3': 3, 'doc4': 3, 'doc5': 3,
-          'doc6': 3, 'doc7': 3, 'doc8': 3, 'doc9': 3, 'doc10': 3, 'doc11': 4,
-          // Modalidades de Testes
-          'test1': 3, 'test2': 3, 'test3': 4, 'test4': 3, 'test5': 3,
-          'test6': 4, 'test7': 3, 'test8': 3, 'test9': 4, 'test10': 3, 'test11': 4,
-          // QAOPS (scores baixos)
-          'qaops1': 2, 'qaops2': 2, 'qaops3': 2, 'qaops4': 2, 'qaops5': 2,
-          'qaops6': 2, 'qaops7': 2, 'qaops8': 1, 'qaops9': 2, 'qaops10': 2,
-          // Liderança
-          'leader1': 3, 'leader2': 3, 'leader3': 2, 'leader4': 3, 'leader5': 2,
-          'leader6': 3, 'leader7': 3, 'leader8': 3, 'leader9': 3, 'leader10': 3,
-          'leader11': 3, 'leader12': 3
-        }
-      }
-    ];
+    // SEM DADOS MOCK - Retornar array vazio se não há dados reais
+    // Sistema deve mostrar mensagem apropriada quando não há dados
+    console.log('⚠️ Nenhum dado de QualityScore disponível - retornando array vazio');
+    return [];
   }, [selectedQualityScore, dadosProcessados.empresa]);
 
   // Se não há dados, mostrar seletor
   if (!hasData && qualityScores.length > 0) {
     return (
-      <div className="space-y-6">
-        <Card className="p-8 text-center">
-          <div className="max-w-md mx-auto">
-            <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Selecione um QualityScore</h3>
-            <p className="text-gray-600 mb-6">
+      <div className="min-h-[600px] flex items-center justify-center">
+        <div className="max-w-md w-full">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-50 rounded-2xl mb-4">
+              <BarChart3 className="h-8 w-8 text-blue-600" />
+            </div>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+              Selecione um QualityScore
+            </h2>
+            <p className="text-gray-600">
               Escolha uma empresa e versão para visualizar os resultados detalhados.
             </p>
-            
-            <div className="space-y-4">
-              <div className="text-left">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  QualityScore Disponível
-                </label>
-                <Select value={selectedQualityScoreId} onValueChange={onSelectQualityScore}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione uma empresa..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {qualityScores.map((qs) => (
-                      <SelectItem key={qs.id} value={qs.id}>
-                        {qs.companyName} - {qs.createdAt.toLocaleDateString('pt-BR')} ({qs.validUsers} usuários)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          </div>
+          
+          <div className="bg-white rounded-xl border border-gray-200 p-6">
+            <label className="block text-sm font-medium text-gray-700 mb-3">
+              QualityScore Disponível
+            </label>
+            <Select value={selectedQualityScoreId} onValueChange={onSelectQualityScore}>
+              <SelectTrigger className="w-full h-12 text-left">
+                <SelectValue placeholder="Selecione uma empresa..." />
+              </SelectTrigger>
+              <SelectContent>
+                {qualityScores.map((qs) => (
+                  <SelectItem key={qs.id} value={qs.id} className="py-3">
+                    <div className="flex flex-col">
+                      <span className="font-medium">
+                        {qs.companyName} - {qs.createdAt.toLocaleDateString('pt-BR', { 
+                          day: '2-digit', 
+                          month: '2-digit', 
+                          year: 'numeric' 
+                        })}
+                      </span>
+                      <span className="text-sm text-gray-500">
+                        ({qs.validUsers} usuário{qs.validUsers !== 1 ? 's' : ''})
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Mensagem informativa adicional */}
+          <div className="mt-6 bg-blue-50 border border-blue-100 rounded-lg p-4">
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <div className="w-5 h-5 rounded-full bg-blue-500 text-white flex items-center justify-center text-xs font-bold">
+                  i
+                </div>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-medium text-blue-900 mb-1">
+                  Sobre os Resultados
+                </h4>
+                <p className="text-sm text-blue-700">
+                  Os resultados mostram a análise consolidada de todos os participantes da rodada, 
+                  incluindo radar comparativo, mapas de linha pilar e análise de alinhamento da equipe.
+                </p>
               </div>
             </div>
           </div>
-        </Card>
+        </div>
+      </div>
+    );
+  }
+  
+  // Se não há nenhum QualityScore, mostrar mensagem
+  if (!hasData && qualityScores.length === 0) {
+    return (
+      <div className="min-h-[600px] flex items-center justify-center">
+        <div className="max-w-md w-full text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-100 rounded-2xl mb-4">
+            <BarChart3 className="h-8 w-8 text-gray-400" />
+          </div>
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
+            Nenhum Resultado Disponível
+          </h2>
+          <p className="text-gray-600 mb-6">
+            Não há resultados de QualityScore finalizados para visualizar. 
+            Comece criando uma nova rodada ou aguarde a conclusão de rodadas em andamento.
+          </p>
+          <Button 
+            onClick={() => window.location.hash = '#qualityscore-progresso'}
+            className="mx-auto"
+          >
+            <ArrowRight className="h-4 w-4 mr-2" />
+            Ir para Rodadas
+          </Button>
+        </div>
       </div>
     );
   }

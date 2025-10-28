@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -6,12 +6,14 @@ import { Clock, ArrowRight, Target, CheckCircle2, BarChart3, Users, Calendar, Al
 import { QualityScoreLayout } from './QualityScoreLayout';
 import { useAuth } from './AuthContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { useSidebar } from './ui/sidebar';
+import { useRodadasDB } from '../hooks/useRodadasDB';
 
 interface FormularioIntroProps {
-  onStartAssessment: () => void;
+  onStartAssessment: (rodadaId?: string) => void;
 }
 
-// Mock data das rodadas ativas (em produção viria do contexto/backend)
+// Interface para rodada ativa
 interface Rodada {
   id: string;
   nome: string;
@@ -23,80 +25,52 @@ interface Rodada {
   permitirEdicao: boolean;
 }
 
-const getRodadasPorUsuario = (userId?: string): Rodada[] => {
-  // Simular diferentes estados baseado no usuário logado
-  switch (userId) {
-    case '2': // João Silva (Leader) - TechCorp
-      return [
-        {
-          id: 'rodada-q3-2025',
-          nome: 'Q3/2025',
-          prazo: '2025-09-15',
-          totalParticipantes: 10,
-          jaResponderam: 6,
-          status: 'ativa',
-          userStatus: 'nao_respondeu',
-          permitirEdicao: true,
-        }
-      ];
-    case '3': // Maria Santos (Member) - TechCorp - já respondeu
-      return [
-        {
-          id: 'rodada-q3-2025',
-          nome: 'Q3/2025',
-          prazo: '2025-09-15',
-          totalParticipantes: 10,
-          jaResponderam: 6,
-          status: 'ativa',
-          userStatus: 'ja_respondeu',
-          permitirEdicao: true,
-        }
-      ];
-    case '4': // Pedro Costa (Member) - TechCorp - em progresso
-      return [
-        {
-          id: 'rodada-q3-2025',
-          nome: 'Q3/2025',
-          prazo: '2025-09-15',
-          totalParticipantes: 10,
-          jaResponderam: 6,
-          status: 'ativa',
-          userStatus: 'em_progresso',
-          permitirEdicao: true,
-        }
-      ];
-    case '5': // Ana Rodrigues (Leader) - InovaSoft - rodada encerrada
-      return [
-        {
-          id: 'rodada-q2-2025',
-          nome: 'Q2/2025',
-          prazo: '2025-06-30',
-          totalParticipantes: 8,
-          jaResponderam: 8,
-          status: 'encerrada',
-          userStatus: 'ja_respondeu',
-          permitirEdicao: false,
-        }
-      ];
-    default:
-      // Manager ou outros usuários - sem rodada ativa (avaliação individual)
-      return [];
-  }
-};
-
 export function FormularioIntro({ onStartAssessment }: FormularioIntroProps) {
   const { user } = useAuth();
+  const { rodadas: rodadasDB, loading: loadingRodadas } = useRodadasDB();
+  const [rodadaAtiva, setRodadaAtiva] = useState<Rodada | null>(null);
 
-  // Detectar rodada ativa para o usuário
-  const { rodadaAtiva, rodadas } = useMemo(() => {
-    if (!user?.companyId) return { rodadaAtiva: null, rodadas: [] };
-    
-    // Obter rodadas baseadas no usuário atual
-    const rodadasDoUsuario = getRodadasPorUsuario(user.id);
-    const ativa = rodadasDoUsuario.find(r => r.status === 'ativa') || null;
-    
-    return { rodadaAtiva: ativa, rodadas: rodadasDoUsuario };
-  }, [user]);
+  // Buscar rodada ativa onde o usuário é participante
+  useEffect(() => {
+    if (!user?.id || loadingRodadas) {
+      setRodadaAtiva(null);
+      return;
+    }
+
+    // Encontrar rodada ativa onde o usuário está como participante
+    const minhaRodadaAtiva = rodadasDB.find(rodada => {
+      if (rodada.status !== 'ativa') return false;
+      
+      // Verificar se o usuário está na lista de participantes
+      return rodada.participantes?.some(p => p.id === user.id || p.email === user.email);
+    });
+
+    if (minhaRodadaAtiva) {
+      // Encontrar meu status como participante
+      const meuParticipante = minhaRodadaAtiva.participantes?.find(
+        p => p.id === user.id || p.email === user.email
+      );
+
+      const rodadaFormatada: Rodada = {
+        id: minhaRodadaAtiva.id,
+        nome: minhaRodadaAtiva.versao_id,
+        prazo: minhaRodadaAtiva.due_date,
+        totalParticipantes: minhaRodadaAtiva.totalParticipantes || 0,
+        jaResponderam: minhaRodadaAtiva.respostasCompletas || 0,
+        status: 'ativa',
+        userStatus: meuParticipante?.status === 'concluido' 
+          ? 'ja_respondeu' 
+          : meuParticipante?.status === 'respondendo'
+          ? 'em_progresso'
+          : 'nao_respondeu',
+        permitirEdicao: minhaRodadaAtiva.criterio_encerramento === 'manual'
+      };
+      
+      setRodadaAtiva(rodadaFormatada);
+    } else {
+      setRodadaAtiva(null);
+    }
+  }, [user, rodadasDB, loadingRodadas]);
 
   // Determinar contexto e estado do botão
   const contextoFormulario = useMemo(() => {
@@ -138,21 +112,6 @@ export function FormularioIntro({ onStartAssessment }: FormularioIntroProps) {
           botaoVariant: 'default' as const
         };
       }
-    } else {
-      // Verificar se existe rodada encerrada
-      const rodadaEncerrada = rodadas.find(r => r.status === 'encerrada');
-      if (rodadaEncerrada) {
-        const prazoFormatado = new Date(rodadaEncerrada.prazo).toLocaleDateString('pt-BR');
-        return {
-          tipo: 'rodada_encerrada' as const,
-          titulo: `🔒 A Rodada ${rodadaEncerrada.nome} foi encerrada.`,
-          subtitulo: `📅 Encerrada em: ${prazoFormatado}.`,
-          participacao: `👥 Participantes: ${rodadaEncerrada.totalParticipantes} | Respostas: ${rodadaEncerrada.jaResponderam}.`,
-          botaoTexto: `Rodada encerrada em ${prazoFormatado}`,
-          botaoDesabilitado: true,
-          botaoVariant: 'outline' as const
-        };
-      }
     }
     
     // Não há rodada ativa - formulário avulso
@@ -167,9 +126,15 @@ export function FormularioIntro({ onStartAssessment }: FormularioIntroProps) {
     };
   }, [rodadaAtiva]);
 
+  const { setOpen } = useSidebar();
+
   const handleButtonClick = () => {
-    // Aqui poderia ter lógica específica baseada no tipo de contexto
-    onStartAssessment();
+    // Colapsar sidebar ao iniciar avaliação
+    setOpen(false);
+    
+    // Passar o rodadaId se houver uma rodada ativa
+    console.log('🎯 Iniciando assessment - rodadaId:', rodadaAtiva?.id);
+    onStartAssessment(rodadaAtiva?.id);
   };
 
   return (

@@ -92,42 +92,8 @@ const PILLAR_QUESTION_MAPPING = {
 // Lista de perguntas que são textuais e devem ser excluídas dos cálculos numéricos
 const TEXTUAL_QUESTION_IDS = new Set(['test12']);
 
-// Dados de exemplo para demonstração
-const DADOS_EXEMPLO = [
-  {
-    id: 'persona1',
-    nome: 'Ana Silva',
-    empresa: 'TechCorp',
-    cargo: 'QA Lead',
-    respostas: {
-      'leader1': 5, 'leader2': 5, 'leader3': 4, 'leader4': 5, 'leader5': 4,
-      'auto1': 3, 'auto2': 4, 'auto3': 3, 'process1': 4, 'process2': 5,
-      'metric1': 4, 'metric2': 3, 'doc1': 5, 'test1': 4, 'qaops1': 3
-    }
-  },
-  {
-    id: 'persona2',
-    nome: 'Carlos Santos',
-    empresa: 'TechCorp',
-    cargo: 'Senior QA',
-    respostas: {
-      'leader1': 3, 'leader2': 3, 'leader3': 3, 'leader4': 3, 'leader5': 2,
-      'auto1': 5, 'auto2': 5, 'auto3': 4, 'process1': 3, 'process2': 4,
-      'metric1': 2, 'metric2': 3, 'doc1': 3, 'test1': 5, 'qaops1': 4
-    }
-  },
-  {
-    id: 'persona3',
-    nome: 'Maria Oliveira',
-    empresa: 'TechCorp',
-    cargo: 'QA Analyst',
-    respostas: {
-      'leader1': 3, 'leader2': 3, 'leader3': 2, 'leader4': 3, 'leader5': 2,
-      'auto1': 2, 'auto2': 3, 'auto3': 3, 'process1': 3, 'process2': 3,
-      'metric1': 3, 'metric2': 4, 'doc1': 4, 'test1': 3, 'qaops1': 2
-    }
-  }
-];
+// Dados vazios por padrão (dados reais vêm via props)
+const DADOS_EXEMPLO: any[] = [];
 
 type FiltroTipo = 'divergencias' | 'convergencias' | 'todas';
 
